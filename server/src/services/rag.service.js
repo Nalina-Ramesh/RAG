@@ -408,7 +408,9 @@ export const indexDocument = async (documentId) => {
         documentId: document._id,
         content: chunk.content,
         embedding,
-        citation: chunk.citation
+        citation: chunk.citation,
+        companyCode: document.companyCode,
+        departmentCode: document.departmentCode
       });
     }
 
@@ -428,7 +430,7 @@ export const indexDocument = async (documentId) => {
   }
 };
 
-export const retrieveRelevantChunks = async (query, topK = 8, companyCode) => {
+export const retrieveRelevantChunks = async (query, topK = 8, companyCode, departmentCode) => {
   const queryKeywords = extractKeywords(query);
 
   let queryEmbedding = [];
@@ -454,11 +456,13 @@ export const retrieveRelevantChunks = async (query, topK = 8, companyCode) => {
         }
       ];
 
-      if (companyCode) {
+      const stageMatch = {};
+      if (companyCode) stageMatch['documentId.companyCode'] = companyCode;
+      if (departmentCode) stageMatch['documentId.departmentCode'] = departmentCode;
+
+      if (Object.keys(stageMatch).length) {
         pipeline.push({
-          $match: {
-            'documentId.companyCode': companyCode
-          }
+          $match: stageMatch
         });
       }
 
@@ -483,12 +487,16 @@ export const retrieveRelevantChunks = async (query, topK = 8, companyCode) => {
 
   if (!scopedChunks.length) {
     const chunks = await Chunk.find({})
-      .populate('documentId', 'originalName title companyCode')
+      .populate('documentId', 'originalName title companyCode departmentCode')
       .lean();
 
-    scopedChunks = companyCode
-      ? chunks.filter((chunk) => chunk.documentId?.companyCode === companyCode)
-      : chunks;
+    scopedChunks = chunks.filter((chunk) => {
+      if (!chunk.documentId) return false;
+      if (companyCode && chunk.documentId.companyCode !== companyCode) return false;
+      if (departmentCode && chunk.documentId.departmentCode !== departmentCode) return false;
+      if (departmentCode && chunk.departmentCode !== departmentCode) return false;
+      return true;
+    });
   }
 
   const sectionTarget = normalizeSectionQuery(query);

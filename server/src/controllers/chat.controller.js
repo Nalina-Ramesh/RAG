@@ -47,7 +47,11 @@ export const askQuestionSSE = async (req, res) => {
   session.messages.push({ role: 'user', content: question, citations: [] });
   await session.save();
 
-  const contexts = await retrieveRelevantChunks(question, 5, req.user.companyCode);
+  if (req.user.role === 'employee' && !req.user.departmentCode) {
+    throw new ApiError(403, 'Department code required to access department documents');
+  }
+
+  const contexts = await retrieveRelevantChunks(question, 5, req.user.companyCode, req.user.departmentCode);
   const citations = buildCitations(contexts);
 
   res.setHeader('Content-Type', 'text/event-stream');

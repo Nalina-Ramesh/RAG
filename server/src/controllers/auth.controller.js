@@ -39,6 +39,7 @@ const sanitizeUser = (user) => ({
   companyCode: user.companyCode,
   companyAdminId: user.companyAdminId,
   departmentCodes: user.departmentCodes || [],
+  departmentCode: user.departmentCode || null,
   createdAt: user.createdAt
 });
 
@@ -60,10 +61,16 @@ export const signup = async (req, res) => {
     });
   } else {
     const companyCode = payload.companyCode?.trim().toUpperCase();
+    const departmentCode = payload.departmentCode?.trim().toUpperCase();
+
     if (!companyCode) throw new ApiError(400, 'Company code is required for employee signup');
+    if (!departmentCode) throw new ApiError(400, 'Department code is required for employee signup');
 
     const admin = await findAdminByAnyCompanyCode(companyCode);
     if (!admin) throw new ApiError(400, 'Invalid company code');
+
+    const departmentExists = (admin.departmentCodes || []).some((d) => d.code === departmentCode);
+    if (!departmentExists) throw new ApiError(400, 'Invalid department code for this company');
 
     user = await User.create({
       name: payload.name,
@@ -71,7 +78,8 @@ export const signup = async (req, res) => {
       role: payload.role,
       passwordHash,
       companyCode: admin.companyCode,
-      companyAdminId: admin._id
+      companyAdminId: admin._id,
+      departmentCode
     });
   }
 
@@ -95,14 +103,25 @@ export const login = async (req, res) => {
 
   if (payload.role === 'employee') {
     const companyCode = payload.companyCode?.trim().toUpperCase();
+    const departmentCode = payload.departmentCode?.trim().toUpperCase();
+
     if (!companyCode) throw new ApiError(400, 'Company code is required for employee login');
+    if (!departmentCode) throw new ApiError(400, 'Department code is required for employee login');
 
     const admin = await findAdminByAnyCompanyCode(companyCode);
     if (!admin) throw new ApiError(401, 'Invalid company code for this employee');
     if (!user.companyAdminId || user.companyAdminId.toString() !== admin._id.toString()) {
       throw new ApiError(401, 'Invalid company code for this employee');
     }
-  } else if (!user.companyCode) {
+
+    const hasDepartment = (admin.departmentCodes || []).some((d) => d.code === departmentCode);
+    if (!hasDepartment) {
+      throw new ApiError(401, 'Invalid department code for this employee');
+    }
+
+    user.departmentCode = departmentCode;
+    await user.save();
+  } else if (payload.role === 'admin' && !user.companyCode) {
     user.companyCode = await generateUniqueCompanyCode();
     await user.save();
   }

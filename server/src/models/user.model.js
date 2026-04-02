@@ -13,7 +13,8 @@ const userSchema = new mongoose.Schema(
         name: { type: String, trim: true, required: true },
         code: { type: String, uppercase: true, trim: true, required: true }
       }
-    ]
+    ],
+    departmentCode: { type: String, uppercase: true, trim: true }
   },
   { timestamps: true }
 );
