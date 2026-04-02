@@ -9,14 +9,21 @@ import { ThemeToggle } from '../components/theme-toggle';
 export const SignupPage = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'employee' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'employee', companyCode: '' });
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const user = await signup(form);
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        ...(form.role === 'employee' ? { companyCode: form.companyCode } : {})
+      };
+      const user = await signup(payload);
       toast.success('Account created');
       navigate(user.role === 'admin' ? '/documents' : '/chat', { replace: true });
     } catch (error) {
@@ -39,13 +46,26 @@ export const SignupPage = () => {
           <p className="text-xs uppercase tracking-[0.25em] text-indigo-500">OpsMind AI</p>
           <h1 className="text-2xl font-bold">Create Account</h1>
         </div>
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <button type="button" onClick={() => setForm((f) => ({ ...f, role: 'employee' }))} className={`rounded-lg px-3 py-2 text-sm font-semibold ${form.role === 'employee' ? 'bg-white text-indigo-600 dark:bg-slate-900' : 'text-slate-500'}`}>
+            Employee
+          </button>
+          <button type="button" onClick={() => setForm((f) => ({ ...f, role: 'admin' }))} className={`rounded-lg px-3 py-2 text-sm font-semibold ${form.role === 'admin' ? 'bg-white text-indigo-600 dark:bg-slate-900' : 'text-slate-500'}`}>
+            Admin
+          </button>
+        </div>
         <input className="input-premium" placeholder="Full name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         <input className="input-premium" placeholder="Work email" type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         <input className="input-premium" placeholder="Password" type="password" required minLength={8} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
-        <select className="input-premium" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-          <option value="employee">Employee</option>
-          <option value="admin">Admin</option>
-        </select>
+        {form.role === 'employee' && (
+          <input
+            className="input-premium uppercase"
+            placeholder="Company code"
+            required
+            value={form.companyCode}
+            onChange={(e) => setForm((f) => ({ ...f, companyCode: e.target.value.toUpperCase() }))}
+          />
+        )}
         <button disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 py-3 font-semibold text-white disabled:opacity-50">
           {loading ? 'Creating...' : 'Signup'}
         </button>

@@ -47,7 +47,7 @@ export const ChatPage = ({ citations, setCitations }) => {
         onToken: (token) => {
           setMessages((prev) => {
             const next = [...prev];
-            const idx = next.findIndex((m) => m.id === tempAssistantId || (m.role === 'assistant' && !m._id));
+            const idx = next.findIndex((m) => m.id === tempAssistantId);
             if (idx >= 0) {
               next[idx] = { ...next[idx], id: tempAssistantId, content: `${next[idx].content || ''}${token}` };
             }
@@ -93,7 +93,7 @@ export const ChatPage = ({ citations, setCitations }) => {
             </div>
           )}
           {messages.map((m, idx) => (
-            <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`max-w-3xl rounded-2xl px-4 py-3 ${m.role === 'user' ? 'ml-auto bg-indigo-600 text-white' : 'bg-white/80 dark:bg-slate-800/70'}`}>
+            <motion.div key={m._id || m.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`max-w-3xl rounded-2xl px-4 py-3 ${m.role === 'user' ? 'ml-auto bg-indigo-600 text-white' : 'bg-white/80 dark:bg-slate-800/70'}`}>
               <p className="whitespace-pre-wrap text-sm">{m.content}</p>
             </motion.div>
           ))}
