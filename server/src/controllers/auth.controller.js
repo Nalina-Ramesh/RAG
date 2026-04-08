@@ -45,7 +45,8 @@ const sanitizeUser = (user) => ({
 
 export const signup = async (req, res) => {
   const payload = signupSchema.parse(req.body);
-  const existing = await User.findOne({ email: payload.email });
+  const email = payload.email.trim().toLowerCase();
+  const existing = await User.findOne({ email });
   if (existing) throw new ApiError(409, 'Email already in use');
 
   const passwordHash = await bcrypt.hash(payload.password, 12);
@@ -54,7 +55,7 @@ export const signup = async (req, res) => {
   if (payload.role === 'admin') {
     user = await User.create({
       name: payload.name,
-      email: payload.email,
+      email,
       role: payload.role,
       passwordHash,
       companyCode: await generateUniqueCompanyCode()
@@ -74,7 +75,7 @@ export const signup = async (req, res) => {
 
     user = await User.create({
       name: payload.name,
-      email: payload.email,
+      email,
       role: payload.role,
       passwordHash,
       companyCode: admin.companyCode,
@@ -93,7 +94,8 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   const payload = loginSchema.parse(req.body);
-  const user = await User.findOne({ email: payload.email });
+  const email = payload.email.trim().toLowerCase();
+  const user = await User.findOne({ email });
   if (!user) throw new ApiError(401, 'Invalid credentials');
 
   if (user.role !== payload.role) throw new ApiError(401, 'Role mismatch for account');

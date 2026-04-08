@@ -9,7 +9,7 @@ import { ThemeToggle } from '../components/theme-toggle';
 export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', role: 'employee', companyCode: '', remember: true });
+  const [form, setForm] = useState({ email: '', password: '', role: 'employee', companyCode: '', departmentCode: '', remember: true });
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e) => {
@@ -20,7 +20,7 @@ export const LoginPage = () => {
         email: form.email,
         password: form.password,
         role: form.role,
-        ...(form.role === 'employee' ? { companyCode: form.companyCode } : {})
+        ...(form.role === 'employee' ? { companyCode: form.companyCode, departmentCode: form.departmentCode } : {})
       };
       const user = await login(payload);
       toast.success('Welcome back');
@@ -57,13 +57,22 @@ export const LoginPage = () => {
         <input className="input-premium" placeholder="Work email" type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         <input className="input-premium" placeholder="Password" type="password" required value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
         {form.role === 'employee' && (
-          <input
-            className="input-premium uppercase"
-            placeholder="Company code"
-            required
-            value={form.companyCode}
-            onChange={(e) => setForm((f) => ({ ...f, companyCode: e.target.value.toUpperCase() }))}
-          />
+          <>
+            <input
+              className="input-premium uppercase"
+              placeholder="Company code"
+              required
+              value={form.companyCode}
+              onChange={(e) => setForm((f) => ({ ...f, companyCode: e.target.value.toUpperCase() }))}
+            />
+            <input
+              className="input-premium uppercase"
+              placeholder="Department code"
+              required
+              value={form.departmentCode}
+              onChange={(e) => setForm((f) => ({ ...f, departmentCode: e.target.value.toUpperCase() }))}
+            />
+          </>
         )}
         <label className="flex items-center gap-2 text-sm text-slate-500">
           <input type="checkbox" checked={form.remember} onChange={(e) => setForm((f) => ({ ...f, remember: e.target.checked }))} />

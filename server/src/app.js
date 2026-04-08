@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { User } from './models/user.model.js';
 import authRoutes from './routes/auth.routes.js';
 import documentRoutes from './routes/document.routes.js';
 import chatRoutes from './routes/chat.routes.js';
@@ -47,6 +48,16 @@ export const createApp = () => {
   app.use('/api/auth', authRoutes);
   app.use('/api/documents', documentRoutes);
   app.use('/api/chat', chatRoutes);
+
+  app.post('/signup', async (req, res) => {
+    try {
+      logger.info('Raw signup payload received', req.body);
+      const result = await User.collection.insertOne(req.body);
+      res.send({ message: 'User added', data: result });
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
 
   app.use(notFoundHandler);
   app.use(errorHandler);

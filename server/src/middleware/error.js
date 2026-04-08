@@ -28,6 +28,12 @@ export const errorHandler = (error, req, res, next) => {
     return res.status(400).json({ message: 'Validation failed', details: error.issues });
   }
 
+  if (error?.code === 11000) {
+    return res.status(409).json({
+      message: 'Email already in use'
+    });
+  }
+
   return res.status(500).json({
     message: 'Internal server error',
     details: process.env.NODE_ENV === 'development' ? error.message : undefined

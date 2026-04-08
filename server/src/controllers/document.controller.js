@@ -15,13 +15,16 @@ const ensureAdminOwnsDocument = (document, user) => {
 export const uploadDocument = async (req, res) => {
   if (!req.file) throw new ApiError(400, 'PDF file is required');
 
-  const departmentCode = req.body.departmentCode?.trim().toUpperCase();
-  if (!departmentCode) throw new ApiError(400, 'Department code is required when uploading department document');
+  const requestedDepartmentCode = req.body.departmentCode?.trim().toUpperCase();
+  if (!requestedDepartmentCode) {
+    throw new ApiError(400, 'Department code is required to upload a team document');
+  }
+  const departmentCode = requestedDepartmentCode;
 
   const admin = await User.findById(req.user._id);
   if (!admin) throw new ApiError(404, 'Admin user not found');
 
-  const validDepartment = (admin.departmentCodes || []).some((dept) => dept.code === departmentCode);
+  const validDepartment = (admin.departmentCodes || []).some((dept) => dept.code === requestedDepartmentCode);
   if (!validDepartment) throw new ApiError(400, 'Invalid department code for admin');
 
   const document = await Document.create({

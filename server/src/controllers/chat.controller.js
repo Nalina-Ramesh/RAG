@@ -6,8 +6,10 @@ import { buildCitations, retrieveRelevantChunks, streamAnswer } from '../service
 
 const askSchema = z.object({
   sessionId: z.string().optional(),
-  question: z.string().min(4).max(4000)
+  question: z.string().trim().min(1).max(4000)
 });
+
+const isValidObjectId = (value) => /^[a-fA-F0-9]{24}$/.test(value);
 
 export const listSessions = async (req, res) => {
   const sessions = await ChatSession.find({ userId: req.user._id })
@@ -28,6 +30,9 @@ export const getSession = async (req, res) => {
 
 const ensureSession = async (userId, sessionId, question) => {
   if (sessionId) {
+    if (!isValidObjectId(sessionId)) {
+      throw new ApiError(400, 'Invalid session id');
+    }
     const existing = await ChatSession.findOne({ _id: sessionId, userId });
     if (!existing) throw new ApiError(404, 'Session not found');
     return existing;

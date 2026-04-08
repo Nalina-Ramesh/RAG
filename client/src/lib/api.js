@@ -14,17 +14,26 @@ api.interceptors.request.use((config) => {
 
 export const streamChat = async ({ question, sessionId, onMeta, onToken, onDone, onError }) => {
   const token = localStorage.getItem('opsmind_token');
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const response = await fetch(`${API_BASE}/chat/ask/stream`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
+    headers,
     body: JSON.stringify({ question, sessionId })
   });
 
   if (!response.ok || !response.body) {
-    throw new Error('Failed to stream response');
+    let message = 'Failed to stream response';
+    try {
+      const payload = await response.json();
+      if (payload?.message) message = payload.message;
+    } catch {
+      // ignore JSON parse failure for non-JSON error responses
+    }
+    throw new Error(message);
   }
 
   const reader = response.body.getReader();
@@ -45,10 +54,14 @@ export const streamChat = async ({ question, sessionId, onMeta, onToken, onDone,
       const dataLine = rawEvent.split('\n').find((line) => line.startsWith('data:'));
       if (eventLine && dataLine) {
         const event = eventLine.replace('event:', '').trim();
-        const data = JSON.parse(dataLine.replace('data:', '').trim());
-        if (event === 'meta') onMeta?.(data);
-        if (event === 'token') onToken?.(data.token);
-        if (event === 'done') onDone?.(data);
+        try {
+          const data = JSON.parse(dataLine.replace('data:', '').trim());
+          if (event === 'meta') onMeta?.(data);
+          if (event === 'token') onToken?.(data.token);
+          if (event === 'done') onDone?.(data);
+        } catch (parseError) {
+          onError?.(parseError);
+        }
       }
 
       eventBoundary = buffer.indexOf('\n\n');
